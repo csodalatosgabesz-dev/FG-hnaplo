@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Privát határidőnapló</title>
+<style>
+:root{--bg:#f5f4f0;--card:#fff;--ink:#1c1c1e;--muted:#77777d;--line:#e3e1da;--acc:#2f6f5e;--inc:#2a7d4c;--exp:#b3473b;--hol:#fbe4e0}
+@media (prefers-color-scheme:dark){:root{--bg:#121214;--card:#1d1d21;--ink:#f1f1f3;--muted:#9a9aa3;--line:#2c2c32;--acc:#5fb59c;--inc:#6cc38c;--exp:#e7857a;--hol:#3a2624}}
+*{box-sizing:border-box}
+body{margin:0;font:15px -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 12px 0}
+h1{font-size:18px;margin:0 0 6px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{border:0;background:none;padding:8px 10px;color:var(--muted);border-bottom:2px solid transparent;font:inherit;white-space:nowrap;cursor:pointer}
+nav.tabs button.on{color:var(--acc);border-color:var(--acc);font-weight:600}
+main{padding:12px;max-width:1100px;margin:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.d{color:var(--exp)}
+input,select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.title{font-weight:600;margin:0 0 8px}
+.mgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.mgrid3{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.mg{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:12px}
+.mg[onclick]{cursor:pointer}
+.mt{font-weight:600;margin-bottom:4px}
+.wk,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.wk span{font-size:11px;color:var(--muted)}
+.c{min-height:34px;border-radius:6px;padding:3px;font-size:12px;cursor:pointer;overflow:hidden}
+.c.big{min-height:92px;text-align:left}
+.c:hover{background:var(--line)}
+.c.out{opacity:.35}
+.c.hol{background:var(--hol)}
+.c.today{outline:2px solid var(--acc)}
+.c .nm{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c .hn{display:block;font-size:10px;color:var(--exp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c .ev{display:block;font-size:10px;background:var(--acc);color:#fff;border-radius:4px;padding:0 3px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c .inc{display:block;font-size:10px;color:var(--inc)}
+.c .exp{display:block;font-size:10px;color:var(--exp)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:3px;background:var(--acc);margin-right:2px}
+.dot.i{background:var(--inc)}
+.week{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.dc{cursor:pointer}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.addf{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.addf input,.addf select{flex:1 1 120px}
+.inc{color:var(--inc)}
+.exp{color:var(--exp)}
+.r{text-align:right}
+.hn{color:var(--exp)}
+.nm{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line)}
+tr.tot td{font-weight:700}
+.fc{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:12px}
+.fd{background:var(--bg);border-radius:10px;padding:8px;text-align:center}
+.now{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.big{font-size:44px;font-weight:700}
+.res{padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Privát határidőnapló</h1>
+  <nav class="tabs">
+    <button data-t="naptar" onclick="setTab('naptar')">Naptár</button>
+    <button data-t="penz" onclick="setTab('penz')">Bevétel / kiadás</button>
+    <button data-t="ossz" onclick="setTab('ossz')">Összesítés</button>
+    <button data-t="ido" onclick="setTab('ido')">Időjárás</button>
+    <button data-t="mentes" onclick="setTab('mentes')">Mentés</button>
+  </nav>
+</header>
+<main id="main"></main>
+<datalist id="cats"></datalist>
+
+<script>
+/* ---------- segédfüggvények ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const P=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const TODAY=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate())};
+const fmt=n=>Math.round(Number(n)||0).toLocaleString('hu-HU')+' Ft';
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const MONTHS=['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
+const DAYS=['Hé','Ke','Sze','Csü','Pé','Szo','Va'];
+const WD=['Hétfő','Kedd','Szerda','Csütörtök','Péntek','Szombat','Vasárnap'];
+const MODES={ev:'Év',neg:'Negyedév',fel:'Félév',ho:'Hónap',het:'Hét',nap:'Nap'};
+
+/* ---------- tárolás ---------- */
+const KEY='privatNaplo.v1';
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+S=S||{ev:[],tx:[],city:null};
+S.ev=S.ev||[];S.tx=S.tx||[];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- állapot ---------- */
+const UI={tab:'naptar',mode:'ho',cur:TODAY()};
+let IDX={};
+let CITIES=[];
+
+/* ---------- ünnepek (magyar) ---------- */
+const FIX={'01-01':'Újév','03-15':'Nemzeti ünnep','05-01':'A munka ünnepe','08-20':'Az államalapítás ünnepe','10-23':'Nemzeti ünnep (1956)','12-25':'Karácsony','12-26':'Karácsony másnapja'};
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
+const HOLC={};
+function holidays(y){
+  if(HOLC[y])return HOLC[y];
+  const o={};
+  for(const k in FIX)o[y+'-'+k]=FIX[k];
+  const e=easter(y);
+  o[ymd(addDays(e,-2))]='Nagypéntek';
+  o[ymd(e)]='Húsvétvasárnap';
+  o[ymd(addDays(e,1))]='Húsvéthétfő';
+  o[ymd(addDays(e,49))]='Pünkösdvasárnap';
+  o[ymd(addDays(e,50))]='Pünkösdhétfő';
+  return HOLC[y]=o;
+}
+
+/* ---------- névnapok (hónap => napok, kezdő nap = 1) ----------
+   Kézzel összeállított, közkeletű naptár. Ellenőrizd és szükség esetén javítsd. */
+const NM={
+1:'Fruzsina|Ábel|Genovéva|Titusz|Simon|Boldizsár|Attila|Gyöngyvér|Marcell|Melánia|Ágota|Ernő|Veronika|Bódog|Lóránt|Gusztáv|Antal|Piroska|Sebestyén|Sára|Ágnes|Vince|Zelma|Timót|Pál|Vanda|Angelika|Károly|Adél|Martina|Gerda',
+2:'Ignác|Karolina|Balázs|Ráhel|Ágota|Dorottya|Tódor|Aranka|Abigél|Elvira|Bertold|Lívia|Ella|Bálint|Kolos|Julianna|Donát|Bernadett|Zsuzsanna|Aladár|Eleonóra|Gerzson|Alfréd|Mátyás|Géza|Edina|Ákos|Elemér',
+3:'Albin|Lujza|Kornélia|Kázmér|Adorján|Leonóra|Tamás|Zoltán|Franciska|Ildikó|Szilárd|Gergely|Krisztián|Matild|Krisztina|Kristóf|Henrietta|Gertrúd|Sándor|József|Klaudia|Benedek|Béla|Ágnes|Gabriella|Teodóra|Emánuel|Ferenc|Lidia|Gyöngyi|Gedeon',
+4:'Hugó|Áron|Buda|Izidor|Vince|Vilmos|Herman|Dénes|Erhard|Zsolt|Leó|Gyula|Ida|Tibor|Tas|Csongor|Rudolf|Andrea|Emma|Tivadar|Konrád|Csilla|Béla|György|Markó|Ervin|Zita|Valéria|Péter|Katalin',
+5:'Fülöp|Zsigmond|Tímea|Mónika|Flórián|Gotthárd|Ivett|Gizella|Mihály|Gyöngyi|Ferenc|Pongrác|Szervác|Zsófia|Mózes|Paszkál|Erik|Ivó|Bernát|Konstantin|Júlia|Dezső|Eszter|Orbán|Fülöp|Hella|Emil|Magdolna|Janka|Angéla',
+6:'Tünde|Kármen|Klotild|Bulcsú|Fatime|Norbert|Róbert|Medárd|Félix|Margit|Barnabás|Villő|Antal|Vazul|Jolán|Jusztin|Laura|Arnold|Levente|Gyárfás|Alajos|Paulina|Zoltán|Iván|Vilmos|János|László|Levente|Péter|Pál',
+7:'Tihamér|Ottó|Kornél|Ulrik|Emese|Csaba|Appolónia|Ellák|Lukács|Amália|Nóra|Huba|Lina|Dalma|Ilona|Ábrahám|Jácint|Ilka|Lujza|Kristóf|Olga|Szabolcs|Márta|Judit|Oszkár|Boglárka|Lilla|Liliána|Anikó|Ignác',
+8:'Lehel|Hermina|Domonkos|Krisztina|Berta|Ibolya|László|Emília|Lajos|Zoltán|Lőrinc|Zuzanna|Klára|Ipoly|Marcella|Ármin|Ákos|Ilona|Hajnalka|István|Bence|Huba|Menyhért|Bertalan|Lajos|Izsák|Gáspár|Ágoston|Beáta|Bernadett',
+9:'Egyed|Rebeka|Hilda|Rozália|Viktor|Zakariás|Regina|Mária|Ádám|Nikolett|Teodóra|Mária|Kornél|Szeréna|Enikő|Edit|Zsófia|Diána|Vilhelmina|Friderika|Máté|Móric|Tekla|Gellért|Eufrozina|Jusztina|Adalbert|Vencel|Mihály|Jeromos',
+10:'Malvin|Petra|Helga|Ferenc|Aurél|Brúnó|Amália|Koppány|Dénes|Gedeon|Brigitta|Miksa|Kálmán|Helén|Teréz|Gál|Hedvig|Lukács|Nándor|Vendel|Orsolya|Előd|Gyöngyi|Salamon|Bianka|Dömötör|Szabina|Simon|Nárcisz|Alfonz|Farkas',
+11:'Marianna|Achilles|Győző|Károly|Imre|Lénárd|Rezső|Zsombor|Tivadar|Réka|Márton|Jónás|Szilvia|Aliz|Albert|Ödön|Hortenzia|Jenő|Erzsébet|Jolán|Olivér|Cecília|Kelemen|Emma|Katalin|Virág|Virgil|Stefánia|Taksony|András',
+12:'Elza|Melinda|Ferenc|Borbála|Vilma|Miklós|Ambrus|Mária|Natália|Judit|Árpád|Gabriella|Luca|Szilárd|Valér|Etelka|Lázár|Auguszta|Viola|Teodór|Tamás|Zénó|Viktória|Ádám|Eugénia|István|János|Kelemen|Egyed|Dávid|Szilveszter'
+};
+function nameOf(d){const n=NM[d.getMonth()+1];if(!n)return'';return n.split('|')[d.getDate()-1]||''}
+
+/* ---------- időszakok és összegek ---------- */
+function shift(m,d,dir){
+  const y=d.getFullYear(),mo=d.getMonth();
+  switch(m){
+    case'ev':return new Date(y+dir,0,1);
+    case'neg':return new Date(y,mo+3*dir,1);
+    case'fel':return new Date(y,mo+6*dir,1);
+    case'ho':return new Date(y,mo+dir,1);
+    case'het':return addDays(d,7*dir);
+    default:return addDays(d,dir);
+  }
+}
+function periodOf(m,d){
+  const y=d.getFullYear(),mo=d.getMonth();
+  const mk=(a,b,label)=>({from:ymd(a),to:ymd(b),label,subs:[]});
+  const monthP=(yy,mm)=>mk(new Date(yy,mm,1),new Date(yy,mm+1,0),MONTHS[mm]+' '+yy);
+  if(m==='ev'){const p=mk(new Date(y,0,1),new Date(y,11,31),y+' év');p.subs=[...Array(12)].map((_,i)=>monthP(y,i));return p}
+  if(m==='neg'){const q=Math.floor(mo/3),p=mk(new Date(y,q*3,1),new Date(y,q*3+3,0),(q+1)+'. negyedév '+y);p.subs=[0,1,2].map(i=>monthP(y,q*3+i));return p}
+  if(m==='fel'){const h=mo<6?0:1,p=mk(new Date(y,h*6,1),new Date(y,h*6+6,0),(h+1)+'. félév '+y);p.subs=[...Array(6)].map((_,i)=>monthP(y,h*6+i));return p}
+  if(m==='ho'){
+    const p=monthP(y,mo);
+    let s=new Date(y,mo,1),i=1;
+    while(s.getMonth()===mo){
+      const wd=(s.getDay()+6)%7;
+      let e=addDays(s,6-wd);
+      if(e.getMonth()!==mo)e=new Date(y,mo+1,0);
+      p.subs.push(mk(s,e,i+'. hét ('+ymd(s).slice(5)+' – '+ymd(e).slice(5)+')'));
+      i++;s=addDays(e,1);
+    }
+    return p;
+  }
+  if(m==='het'){
+    const wd=(d.getDay()+6)%7,s=addDays(d,-wd),e=addDays(s,6);
+    const p=mk(s,e,'Hét: '+ymd(s)+' – '+ymd(e));
+    p.subs=[...Array(7)].map((_,i)=>{const x=addDays(s,i);return mk(x,x,WD[i]+' '+x.getDate()+'.')});
+    return p;
+  }
+  return mk(d,d,WD[(d.getDay()+6)%7]+', '+ymd(d));
+}
+function sumL(list,t){return list.filter(x=>x.type===t).reduce((a,x)=>a+Number(x.amount||0),0)}
+function sumR(a,b,t){return S.tx.filter(x=>x.type===t&&x.date>=a&&x.date<=b).reduce((s,x)=>s+Number(x.amount||0),0)}
+function index(){
+  const I={};
+  const get=k=>I[k]||(I[k]={ev:[],tx:[]});
+  S.ev.forEach(e=>get(e.date).ev.push(e));
+  S.tx.forEach(t=>get(t.date).tx.push(t));
+  return I;
+}
+function cats(){
+  const DEF=['Lakás','Rezsi','Élelmiszer','Közlekedés','Egészség','Szórakozás','Ruházat','Fizetés','Megtakarítás','Egyéb'];
+  return [...new Set([...DEF,...S.tx.map(t=>t.category).filter(Boolean)])];
+}
+
+/* ---------- navigáció ---------- */
+function setTab(t){UI.tab=t;render()}
+function setMode(m){UI.mode=m;render()}
+function step(dir){UI.cur=shift(UI.mode,UI.cur,dir);render()}
+function setDate(v){if(v){UI.cur=P(v);render()}}
+function todayBtn(){UI.cur=TODAY();render()}
+function goto(k){UI.cur=P(k);UI.mode='nap';UI.tab='naptar';render();window.scrollTo(0,0)}
+function pickMonth(y,mo){UI.cur=new Date(y,mo,1);UI.mode='ho';render()}
+function bar(){
+  const modes=Object.entries(MODES).map(([k,v])=>`<button class="${k===UI.mode?'on':''}" onclick="setMode('${k}')">${v}</button>`).join('');
+  return `<div class="bar"><div class="seg">${modes}</div>
+    <button class="btn" onclick="step(-1)">‹</button>
+    <b>${esc(periodOf(UI.mode,UI.cur).label)}</b>
+    <button class="btn" onclick="step(1)">›</button>
+    <button class="btn" onclick="todayBtn()">Ma</button>
+    <input type="date" value="${ymd(UI.cur)}" onchange="setDate(this.value)"></div>`;
+}
+
+/* ---------- naptár nézetek ---------- */
+function cellHTML(d,mo,big){
+  const k=ymd(d),hol=holidays(d.getFullYear())[k],info=IDX[k]||{ev:[],tx:[]};
+  const sun=d.getDay()===0,inc=sumL(info.tx,'bevetel'),exp=sumL(info.tx,'kiadas');
+  const cls=['c',big?'big':'',d.getMonth()!==mo?'out':'',(hol||sun)?'hol':'',k===ymd(TODAY())?'today':''].join(' ');
+  let inner=`<b>${d.getDate()}</b>`;
+  if(big){
+    inner+=`<span class="nm">${esc(nameOf(d))}</span>`;
+    if(hol)inner+=`<span class="hn">${esc(hol)}</span>`;
+    info.ev.forEach(e=>{inner+=`<span class="ev">${esc(e.time?e.time+' ':'')}${esc(e.title)}</span>`});
+    if(inc)inner+=`<span class="inc">+${fmt(inc)}</span>`;
+    if(exp)inner+=`<span class="exp">−${fmt(exp)}</span>`;
+  }else{
+    inner+=`<div>${'<i class="dot"></i>'.repeat(Math.min(info.ev.length,3))}${info.tx.length?'<i class="dot i"></i>':''}</div>`;
+  }
+  return `<div class="${cls}" onclick="goto('${k}')">${inner}</div>`;
+}
+function monthGrid(y,mo,big){
+  const first=new Date(y,mo,1),lead=(first.getDay()+6)%7,n=new Date(y,mo+1,0).getDate(),rows=Math.ceil((lead+n)/7);
+  const start=addDays(first,-lead);
+  let cells='';
+  for(let i=0;i<rows*7;i++)cells+=cellHTML(addDays(start,i),mo,big);
+  const tot=big?`<small>Bevétel ${fmt(sumR(ymd(first),ymd(new Date(y,mo+1,0)),'bevetel'))} · Kiadás ${fmt(sumR(ymd(first),ymd(new Date(y,mo+1,0)),'kiadas'))}</small>`:'';
+  return `<div class="mg" ${big?'':`onclick="pickMonth(${y},${mo})"`}>
+    <div class="mt">${MONTHS[mo]}${big?' '+y:''}</div>${tot}
+    <div class="wk">${DAYS.map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="grid">${cells}</div></div>`;
+}
+function dayCard(d){
+  const k=ymd(d),info=IDX[k]||{ev:[],tx:[]},hol=holidays(d.getFullYear())[k];
+  return `<div class="card dc" onclick="goto('${k}')">
+    <div class="title">${WD[(d.getDay()+6)%7]} ${d.getDate()}.</div>
+    ${hol?`<div class="hn">${esc(hol)}</div>`:''}
+    <div class="nm">Névnap: ${esc(nameOf(d))||'–'}</div>
+    ${info.ev.map(e=>`<div>${esc(e.time||'')} ${esc(e.title)}</div>`).join('')}
+    ${info.tx.map(t=>`<div class="${t.type==='bevetel'?'inc':'exp'}">${t.type==='bevetel'?'+':'−'}${fmt(t.amount)} ${esc(t.category)}</div>`).join('')}
+  </div>`;
+}
+function txForm(k){
+  return `<form class="addf" onsubmit="addTx(event)">
+    <input type="date" name="date" value="${k}" required>
+    <select name="type"><option value="bevetel">Bevétel</option><option value="kiadas">Kiadás</option></select>
+    <input name="amount" type="number" min="0" step="1" placeholder="Összeg (Ft)" required>
+    <input name="category" list="cats" placeholder="Kategória">
+    <input name="note" placeholder="Megjegyzés">
+    <button class="btn p">Rögzítés</button></form>`;
+}
+function txRow(t){
+  return `<div class="row"><span class="${t.type==='bevetel'?'inc':'exp'}">${t.type==='bevetel'?'+':'−'}${fmt(t.amount)}</span>
+    <span>${esc(t.date)} · ${esc(t.category)} ${t.note?'· '+esc(t.note):''}</span>
+    <button class="btn d" onclick="delTx('${t.id}')">✕</button></div>`;
+}
+function dayDetail(d){
+  const k=ymd(d),info=IDX[k]||{ev:[],tx:[]},hol=holidays(d.getFullYear())[k];
+  const inc=sumL(info.tx,'bevetel'),exp=sumL(info.tx,'kiadas');
+  const evs=[...info.ev].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  return `<div class="card">
+    <div class="title">${WD[(d.getDay()+6)%7]}, ${k}</div>
+    ${hol?`<div class="hn">🎉 ${esc(hol)}</div>`:''}
+    <div class="nm">Névnap: ${esc(nameOf(d))||'–'}</div>
+    <div class="title" style="margin-top:12px">Határidők / események</div>
+    ${evs.map(e=>`<div class="row"><span>${esc(e.time||'')} ${esc(e.title)}${e.note?` <small>· ${esc(e.note)}</small>`:''}</span><button class="btn d" onclick="delEv('${e.id}')">✕</button></div>`).join('')||'<small>Nincs esemény.</small>'}
+    <form class="addf" onsubmit="addEv(event,'${k}')">
+      <input name="time" type="time">
+      <input name="title" placeholder="Esemény / határidő" required>
+      <input name="note" placeholder="Megjegyzés">
+      <button class="btn p">Hozzáadás</button></form>
+  </div>
+  <div class="card">
+    <div class="title">Bevétel / kiadás · <span class="inc">+${fmt(inc)}</span> · <span class="exp">−${fmt(exp)}</span></div>
+    ${info.tx.map(txRow).join('')||'<small>Nincs tétel.</small>'}
+    ${txForm(k)}
+  </div>`;
+}
+
+function viewNaptar(m){
+  const d=UI.cur,y=d.getFullYear(),mo=d.getMonth();
+  let body='';
+  if(UI.mode==='ev')body=`<div class="mgrid">${[...Array(12)].map((_,i)=>monthGrid(y,i,false)).join('')}</div>`;
+  else if(UI.mode==='fel')body=`<div class="mgrid">${[0,1,2,3,4,5].map(i=>monthGrid(y,(mo<6?0:6)+i,false)).join('')}</div>`;
+  else if(UI.mode==='neg')body=`<div class="mgrid3">${[0,1,2].map(i=>monthGrid(y,Math.floor(mo/3)*3+i,true)).join('')}</div>`;
+  else if(UI.mode==='ho')body=monthGrid(y,mo,true);
+  else if(UI.mode==='het'){const s=addDays(d,-((d.getDay()+6)%7));body=`<div class="week">${[...Array(7)].map((_,i)=>dayCard(addDays(s,i))).join('')}</div>`}
+  else body=dayDetail(d);
+  m.innerHTML=bar()+body;
+}
+
+/* ---------- bevétel / kiadás ---------- */
+function viewPenz(m){
+  const p=periodOf(UI.mode,UI.cur);
+  const list=S.tx.filter(t=>t.date>=p.from&&t.date<=p.to).sort((a,b)=>b.date.localeCompare(a.date));
+  m.innerHTML=bar()+`
+    <div class="card"><div class="title">Új tétel</div>${txForm(ymd(UI.cur))}</div>
+    <div class="card"><div class="title">${esc(p.label)} – tételek (${list.length} db)</div>
+      <div class="row"><b>Bevétel: <span class="inc">${fmt(sumR(p.from,p.to,'bevetel'))}</span></b><b>Kiadás: <span class="exp">${fmt(sumR(p.from,p.to,'kiadas'))}</span></b></div>
+      ${list.map(txRow).join('')||'<small>Nincs tétel ebben az időszakban.</small>'}
+    </div>`;
+}
+function addEv(e,k){
+  e.preventDefault();const f=e.target.elements;
+  S.ev.push({id:uid(),date:k,time:f.time.value,title:f.title.value.trim(),note:f.note.value.trim()});
+  save();render();
+}
+function delEv(id){if(confirm('Törlöd ezt az eseményt?')){S.ev=S.ev.filter(x=>x.id!==id);save();render()}}
+function addTx(e){
+  e.preventDefault();const f=e.target.elements;
+  S.tx.push({id:uid(),date:f.date.value,type:f.type.value,amount:Number(f.amount.value),category:f.category.value.trim()||'Egyéb',note:f.note.value.trim()});
+  save();render();
+}
+function delTx(id){if(confirm('Törlöd ezt a tételt?')){S.tx=S.tx.filter(x=>x.id!==id);save();render()}}
+
+/* ---------- összesítés ---------- */
+function viewOssz(m){
+  const p=periodOf(UI.mode,UI.cur);
+  const line=(label,a,b,bold)=>{
+    const i=sumR(a,b,'bevetel'),e=sumR(a,b,'kiadas');
+    return `<tr class="${bold?'tot':''}"><td>${esc(label)}</td><td class="r inc">${fmt(i)}</td><td class="r exp">${fmt(e)}</td><td class="r ${i-e>=0?'inc':'exp'}">${fmt(i-e)}</td></tr>`;
+  };
+  const rows=line(p.label,p.from,p.to,true)+p.subs.map(x=>line(x.label,x.from,x.to,false)).join('');
+  const cats={};
+  S.tx.filter(t=>t.type==='kiadas'&&t.date>=p.from&&t.date<=p.to).forEach(t=>{cats[t.category]=(cats[t.category]||0)+Number(t.amount)});
+  const catRows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="row"><span>${esc(c)}</span><span class="exp">${fmt(v)}</span></div>`).join('')||'<small>Nincs kiadás ebben az időszakban.</small>';
+  m.innerHTML=bar()+`
+    <div class="card"><div class="title">Bevétel – kiadás összesítés</div>
+      <table><tr><th>Időszak</th><th class="r">Bevétel</th><th class="r">Kiadás</th><th class="r">Egyenleg</th></tr>${rows}</table>
+    </div>
+    <div class="card"><div class="title">Kiadás kategóriánként</div>${catRows}</div>`;
+}
+
+/* ---------- időjárás (Open-Meteo, kulcs nélkül) ---------- */
+function WX(c){
+  if(c===0)return'☀️ Derült';
+  if(c<=3)return'⛅ Felhős';
+  if(c<=48)return'🌫️ Köd';
+  if(c<=57)return'🌦️ Szitálás';
+  if(c<=67)return'🌧️ Eső';
+  if(c<=77)return'❄️ Havazás';
+  if(c<=82)return'🌦️ Zápor';
+  if(c<=86)return'🌨️ Hózápor';
+  return'⛈️ Zivatar';
+}
+function viewIdo(m){
+  m.innerHTML=`<div class="card">
+    <div class="title">Időjárás és előrejelzés bármely városban</div>
+    <form class="addf" onsubmit="findCity(event)">
+      <input name="q" placeholder="Város (pl. Budapest, Tokyo, New York)" required>
+      <button class="btn p">Keresés</button></form>
+    <div id="cres"></div>
+    <div id="wres">${S.city?'':'<small>Adj meg egy várost a kereséshez.</small>'}</div>
+  </div>`;
+  if(S.city)loadWeather(S.city);
+}
+async function findCity(e){
+  e.preventDefault();
+  const q=e.target.elements.q.value.trim();
+  $('#cres').innerHTML='<small>Keresés…</small>';
+  try{
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=hu&format=json&name='+encodeURIComponent(q)).then(x=>x.json());
+    CITIES=r.results||[];
+    if(!CITIES.length){$('#cres').innerHTML='<small>Nincs találat.</small>';return}
+    $('#cres').innerHTML=CITIES.map((c,i)=>`<div class="res" onclick="pickCity(${i})">${esc(c.name)}${c.admin1?', '+esc(c.admin1):''}${c.country?' ('+esc(c.country)+')':''}</div>`).join('');
+  }catch(err){$('#cres').innerHTML='<small>A város keresése nem sikerült (nincs internet?).</small>'}
+}
+function pickCity(i){
+  const c=CITIES[i];
+  S.city={name:[c.name,c.country].filter(Boolean).join(', '),lat:c.latitude,lon:c.longitude};
+  save();loadWeather(S.city);
+}
+async function loadWeather(c){
+  const el=$('#wres');
+  if(!el)return;
+  el.innerHTML='<small>Betöltés…</small>';
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}`+
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code`+
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=7`;
+  try{
+    const r=await fetch(url).then(x=>x.json());
+    const cu=r.current,d=r.daily;
+    el.innerHTML=`<div class="title" style="margin-top:12px">${esc(c.name)}</div>
+      <div class="now"><div class="big">${Math.round(cu.temperature_2m)}°C</div>
+      <div>${WX(cu.weather_code)}<br><small>Érzet ${Math.round(cu.apparent_temperature)}°C · szél ${Math.round(cu.wind_speed_10m)} km/h · páratartalom ${cu.relative_humidity_2m}%</small></div></div>
+      <div class="fc">${d.time.map((t,i)=>`<div class="fd"><b>${WD[(P(t).getDay()+6)%7].slice(0,3)}</b><br><small>${t.slice(5)}</small><div>${WX(d.weather_code[i])}</div><div>${Math.round(d.temperature_2m_max[i])}° / ${Math.round(d.temperature_2m_min[i])}°</div><small>csapadék ${d.precipitation_probability_max[i]??'–'}%</small></div>`).join('')}</div>`;
+  }catch(err){el.innerHTML='<small>Az időjárás nem tölthető be (nincs internet?).</small>'}
+}
+
+/* ---------- mentés ---------- */
+function viewMentes(m){
+  m.innerHTML=`<div class="card"><div class="title">Mentés és átvitel</div>
+    <p><small>Az adatok ebben a böngészőben tárolódnak. Más eszközre exportált JSON-fájlon keresztül vihetők át.</small></p>
+    <div class="bar"><button class="btn p" onclick="expJ()">Exportálás (JSON)</button>
+    <label class="btn">Importálás<input type="file" accept="application/json" hidden onchange="impJ(this.files[0])"></label>
+    <button class="btn d" onclick="wipe()">Minden adat törlése</button></div></div>`;
+}
+function expJ(){
+  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='hataridonaplo-'+ymd(new Date())+'.json';a.click();
+}
+async function impJ(f){
+  if(!f)return;
+  try{const j=JSON.parse(await f.text());S={ev:j.ev||[],tx:j.tx||[],city:j.city||null};save();render()}
+  catch(e){alert('A fájl nem olvasható.')}
+}
+function wipe(){if(confirm('Biztosan törlöd az összes adatot?')){S={ev:[],tx:[],city:null};save();render()}}
+
+/* ---------- indítás ---------- */
+function render(){
+  IDX=index();
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===UI.tab));
+  $('#cats').innerHTML=cats().map(c=>`<option value="${esc(c)}">`).join('');
+  const views={naptar:viewNaptar,penz:viewPenz,ossz:viewOssz,ido:viewIdo,mentes:viewMentes};
+  views[UI.tab]($('#main'));
+}
+render();
+</script>
+</body>
+</html>
